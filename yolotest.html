@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test: Fixed vs Growth Mindset</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin: 20px; }
+        .question-container { margin-bottom: 20px; }
+        .slider { width: 100%; }
+        .labels { display: flex; justify-content: space-between; margin-top: 5px; }
+        .result { font-weight: bold; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+    <h2>Test: Fixed vs Growth Mindset</h2>
+    <div id="questions-container"></div>
+
+    <button onclick="calculateFinalScore()">Zakończ test</button>
+    <p class="result" id="result"></p>
+
+    <script>
+        const questions = [
+            "Talent jest czymś, z czym się rodzisz.",
+            "Jeśli nie jesteś w czymś dobry, nigdy nie będziesz.",
+            "Każdy może poprawić swoje umiejętności poprzez naukę.",
+            "Ciężka praca jest ważniejsza niż wrodzony talent.",
+            "Niektórzy ludzie rodzą się z predyspozycjami do sukcesu."
+        ];
+
+        const values = [-1, -0.5, 0, 0.5, 1];
+        let baseScore = 0;
+
+        function createSliders() {
+            const container = document.getElementById("questions-container");
+
+            questions.forEach((question, index) => {
+                const div = document.createElement("div");
+                div.classList.add("question-container");
+
+                div.innerHTML = `
+                    <p>${index + 1}. ${question}</p>
+                    <input type="range" class="slider" min="0" max="4" step="1" value="2" oninput="updateValue(${index})">
+                    <div class="labels">
+                        <span>Disagree</span>
+                        <span>Agree</span>
+                    </div>
+                    <p>Wybrana wartość: <span id="output-${index}">0</span></p>
+                `;
+
+                container.appendChild(div);
+            });
+
+            updateAllValues();
+        }
+
+        function updateValue(index) {
+            let slider = document.getElementsByClassName("slider")[index];
+            let output = document.getElementById(`output-${index}`);
+            output.textContent = values[slider.value];
+        }
+
+        function updateAllValues() {
+            document.querySelectorAll(".slider").forEach((slider, index) => {
+                updateValue(index);
+            });
+        }
+
+        function calculateFinalScore() {
+            let finalScore = baseScore;
+            let answers = [];
+
+            document.querySelectorAll(".slider").forEach((slider, index) => {
+                let val = values[slider.value];
+                answers.push(val);
+                finalScore += val;
+            });
+
+            let group = finalScore < 0 ? "Fixed Mindset ❌" : "Growth Mindset ✅";
+
+            document.getElementById("result").innerHTML = `Twój wynik: ${finalScore.toFixed(2)}. Jesteś w grupie: <strong>${group}</strong>`;
+
+            sendToGoogleSheets(answers, finalScore, group);
+        }
+
+        function sendToGoogleSheets(answers, finalScore, group) {
+            let data = {
+                q1: answers[0],
+                q2: answers[1],
+                q3: answers[2],
+                q4: answers[3],
+                q5: answers[4],
+                finalScore: finalScore,
+                group: group
+            };
+
+            fetch("TWÓJ_URL_APPS_SCRIPT", {
+                method: "POST",
+                mode: "no-cors",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data)
+            }).then(() => {
+                alert("Dane wysłane do Google Sheets!");
+            }).catch(error => {
+                console.error("Błąd wysyłania: ", error);
+            });
+        }
+
+        createSliders();
+    </script>
+
+</body>
+</html>
